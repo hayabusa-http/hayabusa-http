@@ -17,3 +17,11 @@ export type Handler = (reqest: Request, reply: Reply) => unknown | Promise<unkno
 export type ErrorHandler = (error: Error, request: Request, reply: Reply) => unknown | Promise<unknown>;
 
 export type ErrorConstructor = new (...args: any[]) => Error;
+
+export type NextFunction = () => Promise<void>;
+
+export type Middleware = (
+  request: Request,
+  reply: Reply,
+  next: NextFunction
+) => unknown | Promise<unknown>;

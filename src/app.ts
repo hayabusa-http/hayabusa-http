@@ -1,11 +1,13 @@
 import http from "node:http";
 import { Router } from "./router.js";
-import { ErrorConstructor, ErrorHandler, Handler, Reply, Request } from "./types.js";
+import { ErrorConstructor, ErrorHandler, Handler, Middleware, Reply, Request } from "./types.js";
 import { decorateRequest, parseBody } from "./request.js";
 import { decorateReply } from "./reply.js";
 
 export class App {
   private router = new Router();
+
+  private middlewares: Middleware[] = [];
 
   private errorHandlers = new Map<ErrorConstructor, ErrorHandler>();
 
@@ -87,6 +89,42 @@ export class App {
     }
   }
 
+  use(middleware: Middleware) {
+    this.middlewares.push(middleware);
+  }
+
+  private async runMiddlewares(request: Request, reply: Reply, handler: Handler) {
+    const stack = [
+      ...this.middlewares,
+      async () => {
+        const result = await handler(request, reply);
+
+        if (result !== undefined && !reply.writableEnded) {
+          reply.send(result);
+        }
+      },
+    ];
+
+    let index = -1;
+
+    const dispatch = async (i: number): Promise<void> => {
+      if (i <= index) {
+        throw new Error("next() called multiple times");
+      }
+
+      index = i;
+
+      const middleware = stack[i];
+      if (!middleware) {
+        return;
+      }
+
+      await middleware(request, reply, () => dispatch(i + 1));
+    };
+
+    await dispatch(0);
+  }
+
   listen(port: number) {
     const server = http.createServer(
       async (req, res) => {
@@ -112,11 +150,7 @@ export class App {
             request.body = await parseBody(request);
           }
 
-          const result = await match.handler(request, reply);
-
-          if (result !== undefined && !reply.writableEnded) {
-            reply.send(result);
-          }
+          await this.runMiddlewares(request, reply, match.handler);
         } catch (error) {
           await this.handleError(error, request, reply);
         }
