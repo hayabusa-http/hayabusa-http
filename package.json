@@ -1,5 +1,5 @@
 {
-  "name": "hayabusa-http",
+  "name": "@hayabusa-http/hayabusa-http",
   "version": "1.0.0",
   "description": "Fast and Easy backend framework",
   "main": "./dist/index.js",

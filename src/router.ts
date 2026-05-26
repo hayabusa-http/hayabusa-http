@@ -3,66 +3,66 @@ import { Handler } from "./types.js";
 interface Route {
   method: string;
   handler: Handler;
-  parts: string[];
+  regex: RegExp;
+  keys: string[];
 }
 
 export class Router {
   private routes: Route[] = [];
 
   register(method: string, path: string, handler: Handler) {
+    const { regex, keys } = this.compile(path);
     this.routes.push({
       method,
       handler,
-      parts: this.split(path),
+      regex,
+      keys
     });
   }
 
   find(method: string, path: string) {
-    const target = this.split(path);
-
     for (const route of this.routes) {
       if (route.method !== method) {
         continue;
       }
 
-      if (route.parts.length !== target.length) {
+      const match = route.regex.exec(path);
+      if (!match) {
         continue;
       }
 
       const params: Record<string, string> = {};
 
-      let matched = true;
-
-      for (let i = 0; i < route.parts.length; i++) {
-        const routePart = route.parts[i];
-        const targetPart = target[i];
-
-        if (routePart.startsWith(":")) {
-          const key = routePart.slice(1);
-          params[key] = targetPart;
-          continue;
-        }
-
-        if (routePart !== targetPart) {
-          matched = false;
-          break;
-        }
+      for (let i = 0; i < route.keys.length; i++) {
+        params[route.keys[i]] = match[i + 1];
       }
 
-      if (matched) {
-        return {
-          handler: route.handler,
-          params,
-        };
-      }
+      return {
+        handler: route.handler,
+        params
+      };
     }
 
     return null;
   }
 
-  private split(path: string) {
-    return path
+  private compile(path: string) {
+    const keys: string[] = [];
+
+    const pattern = path
       .split("/")
-      .filter(Boolean);
+      .map(part => {
+        if (part.startsWith(":")) {
+          keys.push(part.slice(1));
+          return "([^/]+)";
+        }
+
+        return part.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      }).join("/");
+
+    return {
+      regex: new RegExp(`^${pattern}$`),
+      keys,
+    };
   }
 }
