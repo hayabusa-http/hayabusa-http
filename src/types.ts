@@ -38,9 +38,13 @@ export interface Reply extends ServerResponse {
   status: (code: number) => Reply;
 }
 
-export type Handler<T extends RouteGeneric = RouteGeneric> = (reqest: Request<T>, reply: Reply) => unknown | Promise<unknown>;
+export type Handler<T extends RouteGeneric = RouteGeneric> = (
+  reqest: Request<T>, reply: Reply
+) => unknown | Promise<unknown>;
 
-export type ErrorHandler = (error: Error, request: Request, reply: Reply) => unknown | Promise<unknown>;
+export type ErrorHandler = (
+  error: Error, request: Request, reply: Reply
+) => unknown | Promise<unknown>;
 
 export type ErrorConstructor = new (...args: any[]) => Error;
 
@@ -51,3 +55,15 @@ export type Middleware = (
   reply: Reply,
   next: NextFunction
 ) => unknown | Promise<unknown>;
+
+export interface PluginOptions {
+  [key: string]: unknown;
+}
+
+export interface AppLike {
+  use: (middleware: Middleware) => void;
+}
+
+export type Plugin<T extends PluginOptions = PluginOptions> = (
+  app: AppLike, options: T
+) => void | Promise<void>;

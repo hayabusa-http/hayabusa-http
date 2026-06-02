@@ -1,6 +1,6 @@
 import http from "node:http";
 import { Router } from "./router.js";
-import { ErrorConstructor, ErrorHandler, Handler, Middleware, Reply, Request, RouteGeneric } from "./types.js";
+import { ErrorConstructor, ErrorHandler, Handler, Middleware, Reply, Request, RouteGeneric, PluginOptions, Plugin } from "./types.js";
 import { decorateRequest, parseBody } from "./request.js";
 import { decorateReply } from "./reply.js";
 
@@ -14,6 +14,19 @@ export class App {
   private defaultErrorHandler:
     | ErrorHandler
     | null = null;
+
+  // To resolve the invariant issue in TypeScript, it is defined as any as follows.
+  private plugins = new Set<Plugin<any>>();
+
+  async usePlugin<T extends PluginOptions>(plugin: Plugin<T>, options: T = {} as T) {
+    if (this.plugins.has(plugin)) {
+      return;
+    }
+
+    this.plugins.add(plugin);
+
+    await plugin(this, options);
+  }
 
   private register(method: string, path: string, middlewares: Middleware[], handler: Handler) {
     this.router.register(method, path, handler, middlewares);
