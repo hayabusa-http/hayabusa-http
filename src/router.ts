@@ -16,6 +16,8 @@ class RadixNode {
   children = new Map<string, RadixNode>();
   paramChild?: RadixNode;
   paramName?: string;
+  wildcardChild?: RadixNode;
+  wildcardName?: string;
   route?: Route;
 
   constructor(segment: string) {
@@ -45,10 +47,27 @@ export class Router {
     const segments = path.split("/").filter(Boolean);
     let node = root;
 
-    for (const segment of segments) {
+    for (let i = 0; i < segments.length; i++) {
+      const segment = segments[i];
+
+      if (segment.startsWith("*")) {
+        if (i !== segments.length - 1) {
+          throw new Error("Wildcard must be the last segment");
+        }
+
+        const name = segment.slice(1) || "wildcard";
+        if (!node.wildcardChild) {
+          node.wildcardChild = new RadixNode("*");
+          node.wildcardChild.wildcardName = name;
+        }
+
+        node = node.wildcardChild;
+        break;
+      }
+
       if (segment.startsWith(":")) {
         if (!node.paramChild) {
-          node.paramChild = new RadixNode("*");
+          node.paramChild = new RadixNode(":");
           node.paramChild.paramName = segment.slice(1);
         }
         node = node.paramChild;
@@ -82,18 +101,24 @@ export class Router {
 
     const params: Record<string, string> = {};
 
-    for (const segment of segments) {
-      const staticChild = node.children.get(segment);
+    for (let i = 0; i < segments.length; i++) {
+      const staticChild = node.children.get(segments[i]);
       if (staticChild) {
         node = staticChild;
         continue;
       }
 
       if (node.paramChild) {
-        params[node.paramChild.paramName!] = segment;
+        params[node.paramChild.paramName!] = segments[i];
 
         node = node.paramChild;
         continue;
+      }
+
+      if (node.wildcardChild) {
+        params[node.wildcardChild.wildcardName!] = segments.slice(i).join("/");
+        node = node.wildcardChild;
+        break;
       }
 
       return null;

@@ -8,8 +8,8 @@ export function decorateRequest(request: Request) {
   const parsed = parse(request.url || "", true);
 
   request.query = parsed.query as Record<string, string>;
-  request.params = {};
-  request.body = null;
+  request.params = {} as never;
+  request.body = null as never;
   request.context = {};
 
   return request;

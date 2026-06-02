@@ -4,10 +4,25 @@ export interface RequestContext {
   [key: string]: unknown;
 }
 
+type ParamsType<T extends RouteGeneric> =
+  T["Params"] extends Record<string, string>
+  ? T["Params"]
+  : Record<string, string>;
+
+type QueryType<T extends RouteGeneric> =
+  T["Query"] extends Record<string, unknown>
+  ? T["Query"]
+  : Record<string, unknown>;
+
+type BodyType<T extends RouteGeneric> =
+  T["Body"] extends unknown
+  ? T["Body"]
+  : unknown;
+
 export interface Request<T extends RouteGeneric = RouteGeneric> extends IncomingMessage {
-  query: T["Query"];
-  params: T["Params"];
-  body: T["Body"];
+  query: QueryType<T>;
+  params: ParamsType<T>;
+  body: BodyType<T>;
   context: RequestContext;
 }
 
