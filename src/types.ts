@@ -4,6 +4,12 @@ export interface RequestContext {
   [key: string]: unknown;
 }
 
+export interface RouteGeneric {
+  Params?: Record<string, string>;
+  Query?: Record<string, unknown>;
+  Body?: unknown;
+}
+
 type ParamsType<T extends RouteGeneric> =
   T["Params"] extends Record<string, string>
   ? T["Params"]
@@ -45,9 +51,3 @@ export type Middleware = (
   reply: Reply,
   next: NextFunction
 ) => unknown | Promise<unknown>;
-
-export interface RouteGeneric {
-  Params?: Record<string, string>;
-  Query?: Record<string, unknown>;
-  Body?: unknown;
-}
