@@ -94,32 +94,38 @@ export class App {
   }
 
   private async runMiddlewares(request: Request, reply: Reply, handler: Handler) {
-    const stack = [
-      ...this.middlewares,
-      async () => {
-        const result = await handler(request, reply);
-
-        if (result !== undefined && !reply.writableEnded) {
-          reply.send(result);
-        }
-      },
-    ];
-
     let index = -1;
 
     const dispatch = async (i: number): Promise<void> => {
+      if (reply.writableEnded) {
+        return;
+      }
+
       if (i <= index) {
         throw new Error("next() called multiple times");
       }
 
       index = i;
 
-      const middleware = stack[i];
-      if (!middleware) {
+      if (i === this.middlewares.length) {
+        const result = await handler(request, reply);
+        if (result !== undefined && !reply.writableEnded) {
+          reply.send(result);
+        }
         return;
       }
 
-      await middleware(request, reply, () => dispatch(i + 1));
+      const middleware = this.middlewares[i];
+      let nextCalled = false;
+
+      await middleware(request, reply, async () => {
+        nextCalled = true;
+        await dispatch(i + 1);
+      });
+
+      if (!nextCalled && !reply.writableEnded) {
+        console.warn(`Middleware ${i} exited without next()`);
+      }
     };
 
     await dispatch(0);

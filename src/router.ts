@@ -7,62 +7,103 @@ interface Route {
   keys: string[];
 }
 
+interface MatchResult {
+  handler: Handler;
+  params: Record<string, string>;
+}
+
+class RadixNode {
+  segment: string;
+  children = new Map<string, RadixNode>;
+  paramChild?: RadixNode;
+  paramName?: string;
+  handler?: Handler;
+
+  constructor(segment: string) {
+    this.segment = segment;
+  }
+}
+
 export class Router {
-  private routes: Route[] = [];
+  private trees = new Map<string, RadixNode>;
+
+  constructor() {
+    this.trees.set("GET", new RadixNode(""));
+    this.trees.set("POST", new RadixNode(""));
+    this.trees.set("PUT", new RadixNode(""));
+    this.trees.set("PATCH", new RadixNode(""));
+    this.trees.set("DELETE", new RadixNode(""));
+    this.trees.set("OPTIONS", new RadixNode(""));
+    this.trees.set("HEAD", new RadixNode(""));
+  }
 
   register(method: string, path: string, handler: Handler) {
-    const { regex, keys } = this.compile(path);
-    this.routes.push({
-      method,
-      handler,
-      regex,
-      keys
-    });
-  }
-
-  find(method: string, path: string) {
-    for (const route of this.routes) {
-      if (route.method !== method) {
-        continue;
-      }
-
-      const match = route.regex.exec(path);
-      if (!match) {
-        continue;
-      }
-
-      const params: Record<string, string> = {};
-
-      for (let i = 0; i < route.keys.length; i++) {
-        params[route.keys[i]] = match[i + 1];
-      }
-
-      return {
-        handler: route.handler,
-        params
-      };
+    const root = this.trees.get(method);
+    if (!root) {
+      throw new Error(`Unknown method ${method}`);
     }
 
-    return null;
+    const segments = path.split("/").filter(Boolean);
+    let node = root;
+
+    for (const segment of segments) {
+      if (segment.startsWith(":")) {
+        if (!node.paramChild) {
+          node.paramChild = new RadixNode("*");
+          node.paramChild.paramName = segment.slice(1);
+        }
+        node = node.paramChild;
+        continue;
+      }
+
+      let child = node.children.get(segment);
+      if (!child) {
+        child = new RadixNode(segment);
+        node.children.set(segment, child);
+      }
+
+      node = child;
+    }
+
+    node.handler = handler;
   }
 
-  private compile(path: string) {
-    const keys: string[] = [];
+  find(method: string, path: string): MatchResult | null {
+    const root = this.trees.get(method);
+    if (!root) {
+      return null;
+    }
 
-    const pattern = path
-      .split("/")
-      .map(part => {
-        if (part.startsWith(":")) {
-          keys.push(part.slice(1));
-          return "([^/]+)";
-        }
+    const segments = path.split("/").filter(Boolean);
 
-        return part.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-      }).join("/");
+    let node = root;
+
+    const params: Record<string, string> = {};
+
+    for (const segment of segments) {
+      const staticChild = node.children.get(segment);
+      if (staticChild) {
+        node = staticChild;
+        continue;
+      }
+
+      if (node.paramChild) {
+        params[node.paramChild.paramName!] = segment;
+
+        node = node.paramChild;
+        continue;
+      }
+
+      return null;
+    }
+
+    if (!node.handler) {
+      return null;
+    }
 
     return {
-      regex: new RegExp(`^${pattern}$`),
-      keys,
+      handler: node.handler,
+      params,
     };
   }
 }
