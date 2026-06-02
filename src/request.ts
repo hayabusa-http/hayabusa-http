@@ -10,6 +10,7 @@ export function decorateRequest(request: Request) {
   request.query = parsed.query as Record<string, string>;
   request.params = {};
   request.body = null;
+  request.context = {};
 
   return request;
 }
