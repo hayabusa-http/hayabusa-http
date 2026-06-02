@@ -1,10 +1,10 @@
 import http from "node:http";
 import { Router } from "./router.js";
-import { ErrorConstructor, ErrorHandler, Handler, Middleware, Reply, Request, RouteGeneric, PluginOptions, Plugin } from "./types.js";
+import { ErrorConstructor, ErrorHandler, Handler, Middleware, Reply, Request, RouteGeneric, PluginOptions, Plugin, AppLike } from "./types.js";
 import { decorateRequest, parseBody } from "./request.js";
 import { decorateReply } from "./reply.js";
 
-export class App {
+export class App implements AppLike {
   private router = new Router();
 
   private middlewares: Middleware[] = [];
@@ -17,6 +17,19 @@ export class App {
 
   // To resolve the invariant issue in TypeScript, it is defined as any as follows.
   private plugins = new Set<Plugin<any>>();
+
+  private decorations = new Map<string, unknown>();
+
+  decorate(name: string, value: unknown) {
+    if (this.decorations.has(name)) {
+      throw new Error(`Decoration ${name} already exists`);
+    }
+
+    this.decorations.set(name, value);
+    Object.defineProperty(this, name, {
+      value, writable: false, configurable: false, enumerable: true
+    });
+  }
 
   async usePlugin<T extends PluginOptions>(plugin: Plugin<T>, options: T = {} as T) {
     if (this.plugins.has(plugin)) {

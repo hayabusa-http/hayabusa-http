@@ -1,13 +1,28 @@
-import { parse } from "node:url";
 import { Request } from "./types.js";
 import { BadRequestError, BodyTooLargeError } from "./error.js";
 
 const BODY_LIMIT = 1024 * 1024; // 1MB
 
 export function decorateRequest(request: Request) {
-  const parsed = parse(request.url || "", true);
+  let parsedQuery: Record<string, string> | null = null;
 
-  request.query = parsed.query as Record<string, string>;
+  Object.defineProperty(request, "query", {
+    get() {
+      if (parsedQuery) {
+        return parsedQuery;
+      }
+
+      const url = new URL(request.url || "/", "http://localhost");
+
+      parsedQuery = {};
+
+      for (const [key, value] of url.searchParams.entries()) {
+        parsedQuery[key] = value;
+      }
+      return parsedQuery;
+    }
+  })
+
   request.params = {} as never;
   request.body = null as never;
   request.context = {};

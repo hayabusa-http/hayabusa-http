@@ -39,7 +39,7 @@ export interface Reply extends ServerResponse {
 }
 
 export type Handler<T extends RouteGeneric = RouteGeneric> = (
-  reqest: Request<T>, reply: Reply
+  request: Request<T>, reply: Reply
 ) => unknown | Promise<unknown>;
 
 export type ErrorHandler = (
@@ -62,6 +62,7 @@ export interface PluginOptions {
 
 export interface AppLike {
   use: (middleware: Middleware) => void;
+  decorate(name: string, value: unknown): void;
 }
 
 export type Plugin<T extends PluginOptions = PluginOptions> = (
