@@ -1,6 +1,6 @@
 import http from "node:http";
 import { Router } from "./router.js";
-import { ErrorConstructor, ErrorHandler, Handler, Middleware, Reply, Request } from "./types.js";
+import { ErrorConstructor, ErrorHandler, Handler, Middleware, Reply, Request, RouteGeneric } from "./types.js";
 import { decorateRequest, parseBody } from "./request.js";
 import { decorateReply } from "./reply.js";
 
@@ -15,36 +15,78 @@ export class App {
     | ErrorHandler
     | null = null;
 
-  private register(method: string, path: string, handler: Handler) {
-    this.router.register(method, path, handler);
+  private register(method: string, path: string, middlewares: Middleware[], handler: Handler) {
+    this.router.register(method, path, handler, middlewares);
   }
 
-  get(path: string, handler: Handler) {
-    this.register("GET", path, handler);
+  get<T extends RouteGeneric = RouteGeneric>(path: string, handler: Handler<T>): void;
+
+  get<T extends RouteGeneric = RouteGeneric>(path: string, ...handlers: [...Middleware[], Handler<T>]): void;
+
+  get(path: string, ...handlers: (Middleware | Handler)[]) {
+    const handler = handlers[handlers.length - 1] as Handler;
+    const middlewares = handlers.slice(0, -1) as Middleware[];
+    this.register("GET", path, middlewares, handler);
   }
 
-  post(path: string, handler: Handler) {
-    this.register("POST", path, handler);
+  post<T extends RouteGeneric = RouteGeneric>(path: string, handler: Handler<T>): void;
+
+  post<T extends RouteGeneric = RouteGeneric>(path: string, ...handlers: [...Middleware[], Handler<T>]): void;
+
+  post(path: string, ...handlers: (Middleware | Handler)[]) {
+    const handler = handlers[handlers.length - 1] as Handler;
+    const middlewares = handlers.slice(0, -1) as Middleware[];
+    this.register("POST", path, middlewares, handler);
   }
 
-  put(path: string, handler: Handler) {
-    this.register("PUT", path, handler);
+  put<T extends RouteGeneric = RouteGeneric>(path: string, handler: Handler<T>): void;
+
+  put<T extends RouteGeneric = RouteGeneric>(path: string, ...handlers: [...Middleware[], Handler<T>]): void;
+
+  put(path: string, ...handlers: (Middleware | Handler)[]) {
+    const handler = handlers[handlers.length - 1] as Handler;
+    const middlewares = handlers.slice(0, -1) as Middleware[];
+    this.register("PUT", path, middlewares, handler);
   }
 
-  patch(path: string, handler: Handler) {
-    this.register("PATCH", path, handler);
+  patch<T extends RouteGeneric = RouteGeneric>(path: string, handler: Handler<T>): void;
+
+  patch<T extends RouteGeneric = RouteGeneric>(path: string, ...handlers: [...Middleware[], Handler<T>]): void;
+
+  patch(path: string, ...handlers: (Middleware | Handler)[]) {
+    const handler = handlers[handlers.length - 1] as Handler;
+    const middlewares = handlers.slice(0, -1) as Middleware[];
+    this.register("PATCH", path, middlewares, handler);
   }
 
-  delete(path: string, handler: Handler) {
-    this.register("DELETE", path, handler);
+  delete<T extends RouteGeneric = RouteGeneric>(path: string, handler: Handler<T>): void;
+
+  delete<T extends RouteGeneric = RouteGeneric>(path: string, ...handlers: [...Middleware[], Handler<T>]): void;
+
+  delete(path: string, ...handlers: (Middleware | Handler)[]) {
+    const handler = handlers[handlers.length - 1] as Handler;
+    const middlewares = handlers.slice(0, -1) as Middleware[];
+    this.register("DELETE", path, middlewares, handler);
   }
 
-  options(path: string, handler: Handler) {
-    this.register("OPTIONS", path, handler);
+  options<T extends RouteGeneric = RouteGeneric>(path: string, handler: Handler<T>): void;
+
+  options<T extends RouteGeneric = RouteGeneric>(path: string, ...handlers: [...Middleware[], Handler<T>]): void;
+
+  options(path: string, ...handlers: (Middleware | Handler)[]) {
+    const handler = handlers[handlers.length - 1] as Handler;
+    const middlewares = handlers.slice(0, -1) as Middleware[];
+    this.register("OPTIONS", path, middlewares, handler);
   }
 
-  head(path: string, handler: Handler) {
-    this.register("HEAD", path, handler);
+  head<T extends RouteGeneric = RouteGeneric>(path: string, handler: Handler<T>): void;
+
+  head<T extends RouteGeneric = RouteGeneric>(path: string, ...handlers: [...Middleware[], Handler<T>]): void;
+
+  head(path: string, ...handlers: (Middleware | Handler)[]) {
+    const handler = handlers[handlers.length - 1] as Handler;
+    const middlewares = handlers.slice(0, -1) as Middleware[];
+    this.register("HEAD", path, middlewares, handler);
   }
 
   setErrorHandler(errorClass: ErrorConstructor, handler: ErrorHandler) {
@@ -93,8 +135,10 @@ export class App {
     this.middlewares.push(middleware);
   }
 
-  private async runMiddlewares(request: Request, reply: Reply, handler: Handler) {
+  private async runMiddlewares(request: Request, reply: Reply, handler: Handler, routeMiddlewares: Middleware[]) {
     let index = -1;
+
+    const stack = [...this.middlewares, ...routeMiddlewares];
 
     const dispatch = async (i: number): Promise<void> => {
       if (reply.writableEnded) {
@@ -107,7 +151,7 @@ export class App {
 
       index = i;
 
-      if (i === this.middlewares.length) {
+      if (i === stack.length) {
         const result = await handler(request, reply);
         if (result !== undefined && !reply.writableEnded) {
           reply.send(result);
@@ -115,7 +159,7 @@ export class App {
         return;
       }
 
-      const middleware = this.middlewares[i];
+      const middleware = stack[i];
       let nextCalled = false;
 
       await middleware(request, reply, async () => {
@@ -156,7 +200,7 @@ export class App {
             request.body = await parseBody(request);
           }
 
-          await this.runMiddlewares(request, reply, match.handler);
+          await this.runMiddlewares(request, reply, match.handler, match.middlewares);
         } catch (error) {
           await this.handleError(error, request, reply);
         }

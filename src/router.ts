@@ -1,23 +1,22 @@
-import { Handler } from "./types.js";
+import { Handler, Middleware } from "./types.js";
 
 interface Route {
-  method: string;
   handler: Handler;
-  regex: RegExp;
-  keys: string[];
+  middlewares: Middleware[];
 }
 
 interface MatchResult {
   handler: Handler;
+  middlewares: Middleware[];
   params: Record<string, string>;
 }
 
 class RadixNode {
   segment: string;
-  children = new Map<string, RadixNode>;
+  children = new Map<string, RadixNode>();
   paramChild?: RadixNode;
   paramName?: string;
-  handler?: Handler;
+  route?: Route;
 
   constructor(segment: string) {
     this.segment = segment;
@@ -25,7 +24,7 @@ class RadixNode {
 }
 
 export class Router {
-  private trees = new Map<string, RadixNode>;
+  private trees = new Map<string, RadixNode>();
 
   constructor() {
     this.trees.set("GET", new RadixNode(""));
@@ -37,7 +36,7 @@ export class Router {
     this.trees.set("HEAD", new RadixNode(""));
   }
 
-  register(method: string, path: string, handler: Handler) {
+  register(method: string, path: string, handler: Handler, middlewares: Middleware[]) {
     const root = this.trees.get(method);
     if (!root) {
       throw new Error(`Unknown method ${method}`);
@@ -65,7 +64,10 @@ export class Router {
       node = child;
     }
 
-    node.handler = handler;
+    node.route = {
+      handler,
+      middlewares,
+    };
   }
 
   find(method: string, path: string): MatchResult | null {
@@ -97,12 +99,13 @@ export class Router {
       return null;
     }
 
-    if (!node.handler) {
+    if (!node.route) {
       return null;
     }
 
     return {
-      handler: node.handler,
+      handler: node.route.handler,
+      middlewares: node.route.middlewares,
       params,
     };
   }

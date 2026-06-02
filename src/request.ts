@@ -5,22 +5,9 @@ import { BadRequestError, BodyTooLargeError } from "./error.js";
 const BODY_LIMIT = 1024 * 1024; // 1MB
 
 export function decorateRequest(request: Request) {
-  let parsedQuery: Record<string, string> | null = null;
+  const parsed = parse(request.url || "", true);
 
-  Object.defineProperty(request, "query", {
-    get() {
-      if (parsedQuery) {
-        return parsedQuery;
-      }
-
-      const url = parse(request.url || "", true);
-
-      parsedQuery = url.query as Record<string, string>;
-
-      return parsedQuery;
-    },
-  });
-
+  request.query = parsed.query as Record<string, string>;
   request.params = {};
   request.body = null;
 
