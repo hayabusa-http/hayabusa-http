@@ -1,5 +1,5 @@
 import { Request } from "./types.js";
-import { BadRequestError, BodyTooLargeError } from "./error.js";
+import { BadRequestError, PayloadTooLargeError } from "./error.js";
 
 const BODY_LIMIT = 1024 * 1024; // 1MB
 
@@ -78,7 +78,7 @@ export async function parseBody(request: Request) {
       if (totalSize > BODY_LIMIT) {
         request.resume();
 
-        fail(new BodyTooLargeError());
+        fail(new PayloadTooLargeError());
 
         return;
       }
