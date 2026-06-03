@@ -1,23 +1,5 @@
-# Hayabusa-http
->
-> Haybusa HTTP is a lightweight and fast backend framework. You can customize it to your liking by adding the libraries you want.
+<img width="2000" height="2000" alt="Image" src="https://github.com/user-attachments/assets/6ecfddbc-8bf7-48f4-ae05-8d40c97807e7" />
 
-## wildcard
+Hayabusa is built for flexibility. Like LEGO bricks, you can assemble and customize it to perfectly match your own workflow or your company's architecture. Rather than forcing specific libraries or patterns, Hayabusa gives developers the freedom to choose the tools they prefer and integrate them seamlessly.
 
-### Notice
-
-- The wildcard must be the last segment.
-- It must not be in the middle of the URL.
-
-### Example
-
-- Wildcards can be retrieved from the params variable.
-- The names of wildcards included in the written URL are automatically inferred.
-
-```ts
-app.get("/wildcard/test/*wildcard", async (req) => {
-  return {
-    wildcard: req.params.wildcard
-  }
-});
-```
+Need a backend framework that is lighter, faster, and easier to customize than Express? Hayabusa is the right choice.
