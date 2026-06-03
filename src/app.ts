@@ -1,10 +1,11 @@
 import http from "node:http";
 import { Router } from "./router.js";
-import { ErrorConstructor, ErrorHandler, Handler, Middleware, Reply, Request, RouteGeneric, PluginOptions, Plugin, AppLike, Hook, ErrorHook, HookType, AppOptions } from "./types.js";
+import { ErrorConstructor, ErrorHandler, Handler, Middleware, Reply, Request, RouteGeneric, PluginOptions, Plugin, AppLike, Hook, ErrorHook, HookType, AppOptions, NotFoundHandler, ShutdownHook } from "./types.js";
 import { decorateRequest, parseBody } from "./request.js";
 import { decorateReply } from "./reply.js";
 
 export class App implements AppLike {
+  private server?: http.Server;
   private router = new Router();
   private bodyLimit: number;
 
@@ -39,6 +40,15 @@ export class App implements AppLike {
 
   setDefaultErrorHandler(handler: ErrorHandler) {
     this.defaultErrorHandler = handler;
+  }
+
+  /**
+   * == NotFoundHandler part ==
+   */
+  private notFoundHandler: NotFoundHandler | null = null;
+
+  setNotFoundHandler(handler: NotFoundHandler) {
+    this.notFoundHandler = handler;
   }
 
   /**
@@ -108,6 +118,51 @@ export class App implements AppLike {
       } catch (hookError) {
         console.error("Error hook crashed:", hookError);
       }
+    }
+  }
+
+  /**
+   * == Shutdown hook define part ==
+   */
+  private shutdownHooks: ShutdownHook[] = [];
+  private shuttingDown = false;
+
+  addShutdownHook(hook: ShutdownHook) {
+    this.shutdownHooks.push(hook);
+  }
+
+  private async shutdown(signal: string) {
+    if (this.shuttingDown) {
+      return;
+    }
+
+    this.shuttingDown = true;
+
+    console.log(`Received ${signal}, Hayabusa shutting down...`);
+
+    try {
+      if (this.server) {
+        await new Promise<void>((resolve, reject) => {
+          this.server!.close(error => {
+            if (error) {
+              reject(error);
+              return;
+            }
+
+            resolve();
+          });
+        });
+      }
+
+      for (const hook of this.shutdownHooks) {
+        await hook();
+      }
+
+      console.log("Hayabusa Shutdown complete");
+      process.exit(0);
+    } catch (error) {
+      console.error("Hayabusa Shutdown failed", error);
+      process.exit(1);
     }
   }
 
@@ -262,8 +317,12 @@ export class App implements AppLike {
     }
   }
 
+  /**
+  * == server listen part ==
+  */
+
   listen(port: number) {
-    const server = http.createServer(
+    this.server = http.createServer(
       async (req, res) => {
         const request = decorateRequest(req as Request);
         const reply = decorateReply(res as Reply);
@@ -276,9 +335,13 @@ export class App implements AppLike {
 
           const match = this.router.find(method, path);
           if (!match) {
-            reply.status(404).send({
-              error: "Not Found",
-            });
+            if (this.notFoundHandler) {
+              await this.notFoundHandler(request, reply);
+            } else {
+              reply.status(404).send({
+                error: "Not Found",
+              });
+            }
 
             return;
           }
@@ -302,7 +365,7 @@ export class App implements AppLike {
       }
     );
 
-    server.on("clientError", (error, socket) => {
+    this.server.on("clientError", (error, socket) => {
       console.error("Client error:", error);
 
       socket.end("HTTP/1.1 400 Bad Request\r\n\r\n");
@@ -312,8 +375,11 @@ export class App implements AppLike {
       console.error("Unhandled Rejection:", error);
     });
 
-    server.listen(port, () => {
+    this.server.listen(port, () => {
       console.log(`Hayabusa Server listening on ${port}`);
     });
+
+    process.once("SIGINT", () => void this.shutdown("SIGINT"));
+    process.once("SIGTERM", () => void this.shutdown("SIGTERM"));
   }
 }

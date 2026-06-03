@@ -81,3 +81,7 @@ export type ErrorHook = (error: Error, request: Request, reply: Reply) => unknow
 export interface AppOptions {
   bodyLimit?: number;
 }
+
+export type NotFoundHandler = (request: Request, reply: Reply) => unknown | Promise<unknown>;
+
+export type ShutdownHook = () => void | Promise<void>;
