@@ -1,11 +1,16 @@
 import http from "node:http";
 import { Router } from "./router.js";
-import { ErrorConstructor, ErrorHandler, Handler, Middleware, Reply, Request, RouteGeneric, PluginOptions, Plugin, AppLike, Hook, ErrorHook, HookType } from "./types.js";
+import { ErrorConstructor, ErrorHandler, Handler, Middleware, Reply, Request, RouteGeneric, PluginOptions, Plugin, AppLike, Hook, ErrorHook, HookType, AppOptions } from "./types.js";
 import { decorateRequest, parseBody } from "./request.js";
 import { decorateReply } from "./reply.js";
 
 export class App implements AppLike {
   private router = new Router();
+  private bodyLimit: number;
+
+  constructor(options?: AppOptions) {
+    this.bodyLimit = options?.bodyLimit ?? 1024 * 1024;
+  }
 
   /**
    * == Middleware part ==
@@ -98,7 +103,11 @@ export class App implements AppLike {
 
   private async runErrorHooks(error: Error, request: Request, reply: Reply) {
     for (const hook of this.hooks.onError) {
-      await hook(error, request, reply);
+      try {
+        await hook(error, request, reply);
+      } catch (hookError) {
+        console.error("Error hook crashed:", hookError);
+      }
     }
   }
 
@@ -277,7 +286,7 @@ export class App implements AppLike {
           request.params = match.params;
 
           if (method !== "GET" && method !== "HEAD") {
-            request.body = await parseBody(request);
+            request.body = await parseBody(request, this.bodyLimit);
           }
 
           await this.runHooks(this.hooks.preHandler, request, reply);
@@ -286,7 +295,9 @@ export class App implements AppLike {
 
           await this.runHooks(this.hooks.onResponse, request, reply);
         } catch (error) {
-          await this.handleError(error, request, reply);
+          const err = error instanceof Error ? error : new Error("Unknown error");
+          await this.runErrorHooks(err, request, reply);
+          await this.handleError(err, request, reply);
         }
       }
     );

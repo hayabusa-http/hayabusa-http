@@ -77,3 +77,7 @@ export type HookType =
 export type Hook = (request: Request, reply: Reply) => unknown | Promise<unknown>;
 
 export type ErrorHook = (error: Error, request: Request, reply: Reply) => unknown | Promise<unknown>;
+
+export interface AppOptions {
+  bodyLimit?: number;
+}

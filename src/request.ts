@@ -1,8 +1,6 @@
 import { Request } from "./types.js";
 import { BadRequestError, PayloadTooLargeError } from "./error.js";
 
-const BODY_LIMIT = 1024 * 1024; // 1MB
-
 export function decorateRequest(request: Request) {
   let parsedQuery: Record<string, string> | null = null;
 
@@ -30,7 +28,7 @@ export function decorateRequest(request: Request) {
   return request;
 }
 
-export async function parseBody(request: Request) {
+export async function parseBody(request: Request, bodyLimit: number) {
   return new Promise((resolve, reject) => {
     const chunks: Buffer[] = [];
 
@@ -75,7 +73,7 @@ export async function parseBody(request: Request) {
 
       totalSize += chunk.length;
 
-      if (totalSize > BODY_LIMIT) {
+      if (totalSize > bodyLimit) {
         request.resume();
 
         fail(new PayloadTooLargeError());
