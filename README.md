@@ -105,6 +105,8 @@ npx tsc —init
 }
 ```
 
+- Notice!!! :
+  - Hayabusa relies on Node.js packages, so you must include `"node"` in the `types` array of your tsconfig file.
 - Set up a basic `tsconfig.json`. You can modify the configuration to suit your own needs and coding style.
 
 ```json
@@ -114,7 +116,9 @@ npx tsc —init
 
     "module": "NodeNext",
     "moduleResolution": "NodeNext",
-
+    "types": [
+      "node"
+    ],
     "rootDir": "src",
     "outDir": "dist",
 
