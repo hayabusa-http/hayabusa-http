@@ -73,10 +73,79 @@ Need a backend framework that is lighter, faster, and easier to customize than E
   - [Write Cookie](#write-cookie)
   - [Real World examples - JWT](#real-world-examples---jwt)
 
-## Installation
+## Installation & Setup
 
 ```bash
+npm init -y
+npm i -D typescript tsx @types/node
 npm i @hayabusa-http/hayabusa-http
+npx tsc —init
+```
+
+- Hayabusa is ESM-only. Therefore, your package.json must contain the following setting: `"type": "module"`
+
+```json
+{
+  "name": "my-hayabusa-app",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/server.ts",
+    "build": "tsc",
+    "start": "node dist/server.js"
+  },
+  "dependencies": {
+    "@hayabusa-http/hayabusa-http": "^0.1.1"
+  },
+  "devDependencies": {
+    "@types/node": "^25.0.0",
+    "tsx": "^4.22.3",
+    "typescript": "^6.0.0"
+  }
+}
+```
+
+- Set up a basic `tsconfig.json`. You can modify the configuration to suit your own needs and coding style.
+
+```json
+{
+  "compilerOptions": {
+    "target": "ES2022",
+
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+
+    "rootDir": "src",
+    "outDir": "dist",
+
+    "strict": true,
+
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+
+    "declaration": false
+  },
+
+  "include": [
+    "src"
+  ]
+}
+```
+
+- `mkdir src`
+
+```ts
+//src/server.ts
+import { App } from "@hayabusa-http/hayabusa-http";
+
+const app = new App();
+app.get("/", async () => {
+  return {
+    hello: true
+  }
+});
+
+app.listen(3000);
 ```
 
 ## Core
