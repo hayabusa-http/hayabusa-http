@@ -8,7 +8,7 @@ Need a backend framework that is lighter, faster, and easier to customize than E
 
 ## Table of Contents
 
-- [Installation](#installation)
+- [Installation](#installation-setup)
 
 ## Core
 
