@@ -1,6 +1,6 @@
 {
   "name": "@hayabusa-http/hayabusa-http",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Fast and Easy backend framework",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -32,5 +32,9 @@
     "@types/node": "^25.9.1",
     "tsx": "^4.22.3",
     "typescript": "^6.0.3"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/hayabusa-http/hayabusa-http"
   }
 }
