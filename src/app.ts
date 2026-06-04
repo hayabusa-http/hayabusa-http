@@ -111,6 +111,16 @@ export class App implements AppLike {
     }
   }
 
+  private async runResponseHooks(request: Request, reply: Reply) {
+    for (const hook of this.hooks.onResponse) {
+      try {
+        await hook(request, reply);
+      } catch (error) {
+        console.error("Response hook crashed:", error);
+      }
+    }
+  }
+
   private async runErrorHooks(error: Error, request: Request, reply: Reply) {
     for (const hook of this.hooks.onError) {
       try {
@@ -243,10 +253,8 @@ export class App implements AppLike {
     this.register("HEAD", path, middlewares, handler);
   }
 
-  private async runMiddlewares(request: Request, reply: Reply, handler: Handler, routeMiddlewares: Middleware[]) {
+  private async runMiddlewareStack(stack: Middleware[], request: Request, reply: Reply, finalHandler?: () => Promise<void>) {
     let index = -1;
-
-    const stack = [...this.middlewares, ...routeMiddlewares];
 
     const dispatch = async (i: number): Promise<void> => {
       if (reply.writableEnded) {
@@ -260,28 +268,22 @@ export class App implements AppLike {
       index = i;
 
       if (i === stack.length) {
-        const result = await handler(request, reply);
-        if (result !== undefined && !reply.writableEnded) {
-          reply.send(result);
+        if (finalHandler) {
+          await finalHandler();
         }
         return;
       }
 
       const middleware = stack[i];
-      let nextCalled = false;
 
       await middleware(request, reply, async () => {
-        nextCalled = true;
         await dispatch(i + 1);
       });
-
-      if (!nextCalled && !reply.writableEnded) {
-        console.warn(`Middleware ${i} exited without next()`);
-      }
     };
 
     await dispatch(0);
   }
+
 
   private async handleError(error: unknown, request: Request, reply: Reply) {
     const err = error instanceof Error
@@ -333,6 +335,8 @@ export class App implements AppLike {
 
           await this.runHooks(this.hooks.onRequest, request, reply);
 
+          await this.runMiddlewareStack(this.middlewares, request, reply);
+
           const match = this.router.find(method, path);
           if (!match) {
             if (this.notFoundHandler) {
@@ -354,13 +358,20 @@ export class App implements AppLike {
 
           await this.runHooks(this.hooks.preHandler, request, reply);
 
-          await this.runMiddlewares(request, reply, match.handler, match.middlewares);
+          await this.runMiddlewareStack(match.middlewares, request, reply, async () => {
+            const result = await match.handler(request, reply);
 
-          await this.runHooks(this.hooks.onResponse, request, reply);
+            if (result !== undefined && !reply.writableEnded) {
+              reply.send(result);
+            }
+          })
+
         } catch (error) {
           const err = error instanceof Error ? error : new Error("Unknown error");
           await this.runErrorHooks(err, request, reply);
           await this.handleError(err, request, reply);
+        } finally {
+          await this.runResponseHooks(request, reply);
         }
       }
     );
