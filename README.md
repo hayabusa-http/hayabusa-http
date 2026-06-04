@@ -8,7 +8,7 @@ Need a backend framework that is lighter, faster, and easier to customize than E
 
 ## Table of Contents
 
-- [Installation](#installation-setup)
+- [Installation](#installation)
 
 ## Core
 
@@ -73,7 +73,7 @@ Need a backend framework that is lighter, faster, and easier to customize than E
   - [Write Cookie](#write-cookie)
   - [Real World examples - JWT](#real-world-examples---jwt)
 
-## Installation & Setup
+## Installation
 
 ```bash
 npm init -y
@@ -116,9 +116,7 @@ npx tsc —init
 
     "module": "NodeNext",
     "moduleResolution": "NodeNext",
-    "types": [
-      "node"
-    ],
+    "types": ["node"],
     "rootDir": "src",
     "outDir": "dist",
 
@@ -130,9 +128,7 @@ npx tsc —init
     "declaration": false
   },
 
-  "include": [
-    "src"
-  ]
+  "include": ["src"]
 }
 ```
 
@@ -145,8 +141,8 @@ import { App } from "@hayabusa-http/hayabusa-http";
 const app = new App();
 app.get("/", async () => {
   return {
-    hello: true
-  }
+    hello: true,
+  };
 });
 
 app.listen(3000);
@@ -165,7 +161,7 @@ app.listen(3000);
 ```ts
 const app = new App();
 //or Customize Json Body Size
-const app = new App({ bodyLimit: 5 * 1024 * 1024}); //5MB Body size, default size is 1MB
+const app = new App({ bodyLimit: 5 * 1024 * 1024 }); //5MB Body size, default size is 1MB
 
 app.listen(3000);
 ```
@@ -185,12 +181,15 @@ app.get("/hello", async () => {
 - To use request body data, specify the expected fields in the Body object, as demonstrated in the example below.
 
 ```ts
-app.post<{ Body: { name: string; nation: string; } }>("/hayabusa", async (req) => {
-  return {
-    method: "POST",
-    body: req.body,
-  };
-});
+app.post<{ Body: { name: string; nation: string } }>(
+  "/hayabusa",
+  async (req) => {
+    return {
+      method: "POST",
+      body: req.body,
+    };
+  },
+);
 ```
 
 ### PUT method
@@ -198,12 +197,15 @@ app.post<{ Body: { name: string; nation: string; } }>("/hayabusa", async (req) =
 - Similar to POST requests, body data can be accessed by defining its structure in the Body object, as demonstrated in the example.
 
 ```ts
-app.put<{ Query: { id: string; }; Body: { name: string; nation: string; } }>("/hayabusa/:id", async (req) => {
-  return {
-    method: "PUT",
-    body: req.body,
-  };
-});
+app.put<{ Query: { id: string }; Body: { name: string; nation: string } }>(
+  "/hayabusa/:id",
+  async (req) => {
+    return {
+      method: "PUT",
+      body: req.body,
+    };
+  },
+);
 ```
 
 ### PATCH method
@@ -211,12 +213,15 @@ app.put<{ Query: { id: string; }; Body: { name: string; nation: string; } }>("/h
 - Similar to POST requests, body data can be accessed by defining its structure in the Body object, as demonstrated in the example.
 
 ```ts
-app.patch<{ Query: { id: string; }; Body: { nation: string; } }>("/hayabusa/:id", async (req) => {
-  return {
-    method: "PATCH",
-    body: req.body,
-  };
-});
+app.patch<{ Query: { id: string }; Body: { nation: string } }>(
+  "/hayabusa/:id",
+  async (req) => {
+    return {
+      method: "PATCH",
+      body: req.body,
+    };
+  },
+);
 ```
 
 ### DELETE method
@@ -237,14 +242,11 @@ app.delete<{ Query: { id: string; }; }("/hayabusa/:id", async (req) => {
 - This tells the framework which parts of the path should be treated as parameters.
 
 ```ts
-app.get<{ Params: { id: string; } }>(
-  "/hayabusa/:id",
-  async (req) => {
-    return {
-      id: req.params.id,
-    };
-  }
-);
+app.get<{ Params: { id: string } }>("/hayabusa/:id", async (req) => {
+  return {
+    id: req.params.id,
+  };
+});
 ```
 
 ### Query
@@ -254,17 +256,17 @@ app.get<{ Params: { id: string; } }>(
 - You can access any query string value directly from the Query object and use it as needed, as demonstrated below.
 
 ```ts
-app.get<{ Params: { id: string; callId: string; }, Query: { page: string; size: string; } }>(
-  "/hayabusa/:id/call/:callId",
-  async (req) => {
-    return {
-      id: req.params.id,
-      callId: req.params.callId,
-      page: req.query.page,
-      size: req.query.size,
-    }
-  }
-);
+app.get<{
+  Params: { id: string; callId: string };
+  Query: { page: string; size: string };
+}>("/hayabusa/:id/call/:callId", async (req) => {
+  return {
+    id: req.params.id,
+    callId: req.params.callId,
+    page: req.query.page,
+    size: req.query.size,
+  };
+});
 ```
 
 ### Wildcard
@@ -281,8 +283,8 @@ app.get<{ Params: { id: string; callId: string; }, Query: { page: string; size: 
 ```ts
 app.get("/wildcard/test/*wildcard", async (req) => {
   return {
-    wildcard: req.params.wildcard
-  }
+    wildcard: req.params.wildcard,
+  };
 });
 ```
 
@@ -300,9 +302,7 @@ app.use(async (req, reply, next) => {
 
   const end = performance.now();
 
-  console.log(
-    `${req.method} ${req.url} ${end - start}ms`
-  );
+  console.log(`${req.method} ${req.url} ${end - start}ms`);
 });
 ```
 
@@ -310,12 +310,11 @@ app.use(async (req, reply, next) => {
 
 ```ts
 app.use(async (req, reply, next) => {
-  const auth =
-    req.headers.authorization;
+  const auth = req.headers.authorization;
 
   if (!auth) {
     reply.status(401).send({
-      error: "Unauthorized"
+      error: "Unauthorized",
     });
 
     return;
@@ -333,43 +332,32 @@ app.use(async (req, reply, next) => {
 - Multiple route middlewares can be chained together.
 
 ```ts
-const authMiddleware: Middleware =
-  async (req, reply, next) => {
-    const auth =
-      req.headers.authorization;
+const authMiddleware: Middleware = async (req, reply, next) => {
+  const auth = req.headers.authorization;
 
-    if (!auth) {
-      reply.status(401).send({
-        error: "Unauthorized",
-      });
+  if (!auth) {
+    reply.status(401).send({
+      error: "Unauthorized",
+    });
 
-      return;
-    }
-
-    await next();
-  };
-
-app.get(
-  "/admin",
-  authMiddleware,
-  async () => {
-    return {
-      admin: true,
-    };
+    return;
   }
-);
+
+  await next();
+};
+
+app.get("/admin", authMiddleware, async () => {
+  return {
+    admin: true,
+  };
+});
 
 // Multiple Route Middlewares
-app.get(
-  "/admin",
-  authMiddleware,
-  permissionMiddleware,
-  async () => {
-    return {
-      success: true
-    };
-  }
-);
+app.get("/admin", authMiddleware, permissionMiddleware, async () => {
+  return {
+    success: true,
+  };
+});
 ```
 
 ### Error Handling
@@ -383,28 +371,23 @@ app.get(
 #### Custom Error Handler
 
 ```ts
-app.setErrorHandler(
-  BadRequestError,
-  (error, req, reply) => {
-    reply.status(400).send({
-      error: error.message,
-    });
-  }
-);
+app.setErrorHandler(BadRequestError, (error, req, reply) => {
+  reply.status(400).send({
+    error: error.message,
+  });
+});
 ```
 
 #### Default Error Handler
 
 ```ts
-app.setDefaultErrorHandler(
-  (error, req, reply) => {
-    console.error(error);
+app.setDefaultErrorHandler((error, req, reply) => {
+  console.error(error);
 
-    reply.status(500).send({
-      error: "Something went wrong",
-    });
-  }
-);
+  reply.status(500).send({
+    error: "Something went wrong",
+  });
+});
 ```
 
 ### Errors
@@ -455,8 +438,7 @@ export class InvalidRouteParameterError extends Error {
 #### 4XX Errors
 
 ```ts
-export class BadRequestError
-  extends HttpError {
+export class BadRequestError extends HttpError {
   constructor(message = "Bad request") {
     super(400, message);
   }
@@ -604,37 +586,30 @@ export class GatewayTimeoutError extends HttpError {
 
 ```ts
 app.decorate("config", {
-  jwtSecret:
-    process.env.JWT_SECRET
+  jwtSecret: process.env.JWT_SECRET,
 });
 ```
 
 #### Global Decoration
 
 ```ts
-export const loggerPlugin: Plugin =
-  async (app) => {
-    app.decorate("logger", {
-      info(message: string) {
-        console.log(
-          `[INFO] ${message}`
-        );
-      }
-    });
-  };
+export const loggerPlugin: Plugin = async (app) => {
+  app.decorate("logger", {
+    info(message: string) {
+      console.log(`[INFO] ${message}`);
+    },
+  });
+};
 
-await app.usePlugin(
-  loggerPlugin
-);
+await app.usePlugin(loggerPlugin);
 
 app.get("/", async () => {
-  const logger =
-    (app as any).logger;
+  const logger = (app as any).logger;
 
   logger.info("hello");
 
   return {
-    success: true
+    success: true,
   };
 });
 ```
@@ -648,7 +623,7 @@ app.get("/", async () => {
 app.use(async (req, reply, next) => {
   req.context.user = {
     id: 1,
-    email: "user@email.com"
+    email: "user@email.com",
   };
 
   await next();
@@ -662,19 +637,12 @@ app.use(async (req, reply, next) => {
 
 ```ts
 app.use(async (req, reply, next) => {
-  const originalSend =
-    reply.send;
+  const originalSend = reply.send;
 
   reply.send = (payload) => {
-    console.log(
-      "Response:",
-      payload
-    );
+    console.log("Response:", payload);
 
-    return originalSend.call(
-      reply,
-      payload
-    );
+    return originalSend.call(reply, payload);
   };
 
   await next();
@@ -686,20 +654,15 @@ app.use(async (req, reply, next) => {
 - Plugins allow reusable functionality to be packaged and shared.
 
 ```ts
-export const loggerPlugin: Plugin =
-  async (app) => {
-    app.decorate("logger", {
-      info(message: string) {
-        console.log(
-          `[INFO] ${message}`
-        );
-      }
-    });
-  };
+export const loggerPlugin: Plugin = async (app) => {
+  app.decorate("logger", {
+    info(message: string) {
+      console.log(`[INFO] ${message}`);
+    },
+  });
+};
 
-await app.usePlugin(
-  loggerPlugin
-);
+await app.usePlugin(loggerPlugin);
 ```
 
 ### Using context
@@ -712,7 +675,7 @@ await app.usePlugin(
 app.use(async (req, reply, next) => {
   req.context.user = {
     id: 1,
-    email: "user@email.com"
+    email: "user@email.com",
   };
 
   await next();
@@ -730,43 +693,29 @@ app.get("/me", async (req) => {
 #### JWT Example
 
 ```ts
-const authMiddleware:
-  Middleware =
-  async (
-    req,
-    reply,
-    next
-  ) => {
-    const auth =
-      req.headers.authorization;
+const authMiddleware: Middleware = async (req, reply, next) => {
+  const auth = req.headers.authorization;
 
-    if (!auth) {
-      reply.status(401).send({
-        error: "Unauthorized",
-      });
+  if (!auth) {
+    reply.status(401).send({
+      error: "Unauthorized",
+    });
 
-      return;
-    }
-
-    const [, token] =
-      auth.split(" ");
-
-    req.context.token =
-      token;
-
-    await next();
-  };
-
-app.get(
-  "/jwt-test",
-  authMiddleware,
-  async (req) => {
-    return {
-      token:
-        req.context.token
-    };
+    return;
   }
-);
+
+  const [, token] = auth.split(" ");
+
+  req.context.token = token;
+
+  await next();
+};
+
+app.get("/jwt-test", authMiddleware, async (req) => {
+  return {
+    token: req.context.token,
+  };
+});
 ```
 
 ### Hook system
@@ -783,17 +732,11 @@ app.get(
 - Runs immediately after receiving a request.
 
 ```ts
-app.addHook(
-  "onRequest",
-  async (req) => {
-    req.context.startTime =
-      performance.now();
+app.addHook("onRequest", async (req) => {
+  req.context.startTime = performance.now();
 
-    console.log(
-      `[REQ] ${req.method} ${req.url}`
-    );
-  }
-);
+  console.log(`[REQ] ${req.method} ${req.url}`);
+});
 ```
 
 #### preHandler
@@ -801,25 +744,15 @@ app.addHook(
 - Runs after routing but before middleware and handlers.
 
 ```ts
-app.addHook(
-  "preHandler",
-  async (req, reply) => {
-    if (
-      req.url?.startsWith(
-        "/admin"
-      )
-    ) {
-      if (
-        !req.headers.authorization
-      ) {
-        reply.status(401).send({
-          error:
-            "Unauthorized"
-        });
-      }
+app.addHook("preHandler", async (req, reply) => {
+  if (req.url?.startsWith("/admin")) {
+    if (!req.headers.authorization) {
+      reply.status(401).send({
+        error: "Unauthorized",
+      });
     }
   }
-);
+});
 ```
 
 #### onResponse
@@ -827,14 +760,9 @@ app.addHook(
 - Runs after a successful response.
 
 ```ts
-app.addHook(
-  "onResponse",
-  async (req) => {
-    console.log(
-      `Response completed: ${req.url}`
-    );
-  }
-);
+app.addHook("onResponse", async (req) => {
+  console.log(`Response completed: ${req.url}`);
+});
 ```
 
 #### onError
@@ -842,14 +770,9 @@ app.addHook(
 - Runs whenever an error occurs.
 
 ```ts
-app.addHook(
-  "onError",
-  async (err, req) => {
-    console.error(
-      `[ERROR HOOK] ${err.message} at ${req.url}`
-    );
-  }
-);
+app.addHook("onError", async (err, req) => {
+  console.error(`[ERROR HOOK] ${err.message} at ${req.url}`);
+});
 ```
 
 ### Using NotFoundHandler
@@ -857,16 +780,13 @@ app.addHook(
 - Customize the response returned when no route matches.
 
 ```ts
-app.setNotFoundHandler(
-  async (req, reply) => {
-    reply.status(404).send({
-      success: false,
-      path: req.url,
-      message:
-        "Route not found"
-    });
-  }
-);
+app.setNotFoundHandler(async (req, reply) => {
+  reply.status(404).send({
+    success: false,
+    path: req.url,
+    message: "Route not found",
+  });
+});
 ```
 
 ### Graceful Shutdown
@@ -881,35 +801,27 @@ app.setNotFoundHandler(
 #### Database Shutdown
 
 ```ts
-app.addShutdownHook(
-  async () => {
-    await db.destroy();
+app.addShutdownHook(async () => {
+  await db.destroy();
 
-    console.log(
-      "Database connection closed"
-    );
-  }
-);
+  console.log("Database connection closed");
+});
 ```
 
 #### Redis Shutdown
 
 ```ts
-app.addShutdownHook(
-  async () => {
-    await redis.quit();
-  }
-);
+app.addShutdownHook(async () => {
+  await redis.quit();
+});
 ```
 
 #### Logger Flush
 
 ```ts
-app.addShutdownHook(
-  async () => {
-    await logger.flush();
-  }
-);
+app.addShutdownHook(async () => {
+  await logger.flush();
+});
 ```
 
 #### Automatic Signal Handling
@@ -938,13 +850,9 @@ app.use(async (req, reply, next) => {
   reply.send = (payload) => {
     if (typeof payload === "object") {
       payload = JSON.parse(
-        JSON.stringify(
-          payload,
-          (_, value) =>
-            typeof value === "bigint"
-              ? value.toString()
-              : value
-        )
+        JSON.stringify(payload, (_, value) =>
+          typeof value === "bigint" ? value.toString() : value,
+        ),
       );
     }
 
@@ -968,8 +876,7 @@ app.use(async (req, reply, next) => {
     return;
   }
 
-  const allowedOrigin =
-    process.env.FRONTEND_ORIGIN;
+  const allowedOrigin = process.env.FRONTEND_ORIGIN;
 
   if (origin !== allowedOrigin) {
     reply.status(403).send({
@@ -978,25 +885,16 @@ app.use(async (req, reply, next) => {
     return;
   }
 
-  reply.setHeader(
-    "Access-Control-Allow-Origin",
-    origin
-  );
+  reply.setHeader("Access-Control-Allow-Origin", origin);
 
-  reply.setHeader(
-    "Access-Control-Allow-Credentials",
-    "true"
-  );
+  reply.setHeader("Access-Control-Allow-Credentials", "true");
 
   reply.setHeader(
     "Access-Control-Allow-Methods",
-    "GET,POST,PUT,PATCH,DELETE,OPTIONS"
+    "GET,POST,PUT,PATCH,DELETE,OPTIONS",
   );
 
-  reply.setHeader(
-    "Access-Control-Allow-Headers",
-    "Content-Type,Authorization"
-  );
+  reply.setHeader("Access-Control-Allow-Headers", "Content-Type,Authorization");
 
   if (req.method === "OPTIONS") {
     reply.status(204).send("");
@@ -1010,10 +908,7 @@ app.use(async (req, reply, next) => {
 - For production, you can configure it as follows.
 
 ```ts
-const allowedOrigins = [
-  "https://toexic.org",
-  "https://admin.toexic.org",
-];
+const allowedOrigins = ["https://toexic.org", "https://admin.toexic.org"];
 app.use(async (req, reply, next) => {
   const origin = req.headers.origin;
 
@@ -1029,15 +924,9 @@ app.use(async (req, reply, next) => {
     return;
   }
 
-  reply.setHeader(
-    "Access-Control-Allow-Origin",
-    origin
-  );
+  reply.setHeader("Access-Control-Allow-Origin", origin);
 
-  reply.setHeader(
-    "Access-Control-Allow-Credentials",
-    "true"
-  );
+  reply.setHeader("Access-Control-Allow-Credentials", "true");
 
   if (req.method === "OPTIONS") {
     reply.status(204).send("");
@@ -1058,7 +947,7 @@ app.use(async (req, reply, next) => {
 ```ts
 app.get("/cookie", async (req) => {
   return {
-    cookie: req.headers.cookie
+    cookie: req.headers.cookie,
   };
 });
 ```
@@ -1075,13 +964,10 @@ app.get("/cookie", async (req) => {
 
 ```ts
 app.get("/login", async (req, reply) => {
-  reply.setHeader(
-    "Set-Cookie",
-    "session=abc123; HttpOnly; Path=/"
-  );
+  reply.setHeader("Set-Cookie", "session=abc123; HttpOnly; Path=/");
 
   return {
-    success: true
+    success: true,
   };
 });
 ```
@@ -1097,15 +983,12 @@ app.get("/login", async (req, reply) => {
 app.post("/login", async (req, reply) => {
   const token = "jwt-token";
 
-  reply.setHeader(
-    "Set-Cookie",
-    [
-      `access_token=${token}; HttpOnly; Path=/; SameSite=Lax`
-    ]
-  );
+  reply.setHeader("Set-Cookie", [
+    `access_token=${token}; HttpOnly; Path=/; SameSite=Lax`,
+  ]);
 
   return {
-    success: true
+    success: true,
   };
 });
 ```
@@ -1114,13 +997,10 @@ app.post("/login", async (req, reply) => {
 
 ```ts
 app.post("/logout", async (req, reply) => {
-  reply.setHeader(
-    "Set-Cookie",
-    "access_token=; Max-Age=0; Path=/"
-  );
+  reply.setHeader("Set-Cookie", "access_token=; Max-Age=0; Path=/");
 
   return {
-    success: true
+    success: true,
   };
 });
 ```
@@ -1145,12 +1025,10 @@ function parseCookies(cookieHeader?: string) {
 }
 
 app.get("/me", async (req) => {
-  const cookies = parseCookies(
-    req.headers.cookie
-  );
+  const cookies = parseCookies(req.headers.cookie);
 
   return {
-    session: cookies.session
+    session: cookies.session,
   };
 });
 ```
