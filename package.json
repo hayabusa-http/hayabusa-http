@@ -19,9 +19,11 @@
     "prepublishOnly": "npm run build"
   },
   "keywords": [
+    "web",
     "framework",
     "backend",
-    "fast"
+    "fast",
+    "server"
   ],
   "author": "chankim",
   "license": "MIT",
